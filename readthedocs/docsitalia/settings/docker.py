@@ -155,7 +155,7 @@ class CommunityProdSettings(CommunityBaseSettings):
 
     # Override classes
     CLASS_OVERRIDES = {
-        'readthedocs.builds.syncers.Syncer': 'readthedocs.builds.syncers.LocalSyncer',
+        'readthedocs.builds.syncers.Syncer': 'readthedocs.builds.syncers.RemoteSyncer',
         'readthedocs.core.resolver.Resolver': 'readthedocs.docsitalia.resolver.ItaliaResolver',
         'readthedocs.oauth.services.GitHubService':
             'readthedocs.docsitalia.oauth.services.github.DocsItaliaGithubService',

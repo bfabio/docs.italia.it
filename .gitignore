@@ -69,4 +69,5 @@ dev.db-journal
 
 
 .secrets
+.secret_key*
 *.bz2

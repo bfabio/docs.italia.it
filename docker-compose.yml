@@ -27,7 +27,8 @@ services:
       - redis
     ports:
       - "8001:8001"
-    command: bash -c "wait-for-it -s -t 60 es:9200 -- docker/gunicorn.sh collect --reload --log-level debug -w 1 -b 0.0.0.0:8001" --
+      - "22:22"
+    command: bash -c "wait-for-it -s -t 60 es:9200 -- docker/gunicorn.sh web --reload --log-level debug -w 1 -b 0.0.0.0:8001" --
     volumes:
       - ".:/app:rw"
       - "docs:/home/documents"
@@ -40,9 +41,10 @@ services:
     image: italia/docs_italia_it_dev:latest
     depends_on:
       - web
+      - celery-build
     ports:
       - "8002:8002"
-    command: docker/gunicorn.sh --reload --log-level debug -w 1 -b 0.0.0.0:8002
+    command: docker/gunicorn.sh api --reload --log-level debug -w 1 -b 0.0.0.0:8002
     volumes:
       - ".:/app:rw"
       - "docs:/home/documents"
@@ -55,7 +57,7 @@ services:
     image: italia/docs_italia_it_dev:latest
     depends_on:
       - web
-    command: bash -c "wait-for-it -s -t 60 es:9200 -- docker/celery.sh -A readthedocs.worker -Ofair -c 3 -Q web,web01,reindex -l DEBUG" --
+    command: bash -c "wait-for-it -s -t 60 web:8001 -- docker/celery.sh web -A readthedocs.worker -Ofair -c 3 -Q web,web01,reindex -l DEBUG" --
     volumes:
       - ".:/app:rw"
       - "docs:/home/documents"
@@ -70,11 +72,10 @@ services:
     image: italia/docs_italia_it_dev:latest
     depends_on:
       - web
-    command: docker/celery.sh -A readthedocs.worker -Ofair -c 6 -Q docs,builder,celery,default,build01 -l DEBUG
+    command: bash -c "wait-for-it -s -t 60 web:8001 -- docker/celery.sh build -A readthedocs.worker -Ofair -c 6 -Q celery-build,builder,celery,default,build01 -l DEBUG" --
     volumes:
       - ".:/app:rw"
-      - "docs:/home/documents"
-      -  "/var/run/docker.sock:/var/run/docker.sock"
+      - "build:/home/documents"
     env_file:
       - .dockerenv
       - .secrets
@@ -107,6 +108,7 @@ services:
       - "./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf"
 
 volumes:
+  build:
   docs:
   dbdata:
   esdata:

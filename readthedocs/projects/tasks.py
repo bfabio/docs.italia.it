@@ -921,7 +921,7 @@ class UpdateDocsTaskStep(SyncRepositoryMixin):
 
         # Broadcast finalization steps to web application instances
         broadcast(
-            type='app',
+            type='build',
             task=sync_files,
             args=[
                 self.project.pk,
@@ -1011,7 +1011,7 @@ class UpdateDocsTaskStep(SyncRepositoryMixin):
             # the files don't get re-uploaded on web.
             if self.version.type != EXTERNAL:
                 broadcast(
-                    type='app',
+                    type='build',
                     task=move_files,
                     args=[
                         self.version.pk,
@@ -1089,7 +1089,7 @@ class UpdateDocsTaskStep(SyncRepositoryMixin):
 
 
 # Web tasks
-@app.task(queue='web')
+@app.task(queue='celery-build')
 def sync_files(
         project_pk,
         version_pk,

@@ -72,14 +72,18 @@ FROM docs_italia_it_build AS docs_italia_it_dev
 
 COPY requirements/ /app/requirements/
 RUN pip install --no-cache-dir -r /app/requirements/docsitalia-converter.txt
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        wait-for-it rsync ssh \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY docker/ /app/docker/
 
 ENV DJANGO_SETTINGS_MODULE=readthedocs.docsitalia.settings.docker
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        wait-for-it \
-    && rm -rf /var/lib/apt/lists/*
-
+COPY .secret_key /root/.ssh/id_rsa
+COPY .secret_key.pub /root/.ssh/authorized_keys
+RUN chmod -R g=,o= /root/.ssh
 CMD ["/bin/bash"]
 
 # `docs_italia_it_web_prod`: Production image for Application
