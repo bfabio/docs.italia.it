@@ -1371,3 +1371,8 @@ div.module.project-subprojects div.subproject-meta {
     font-size: .9em;
     font-style: italic;
 }
+
+/* Project's compilations section */
+.build.build-detail ul.build-meta {
+    list-style: none;
+}
