@@ -370,6 +370,7 @@ class DocsItaliaViewsTest(TestCase):
 
     @mock.patch('readthedocs.docsitalia.views.core_views.trigger_build')
     def test_docsitalia_import_update_project_with_valid_metadata(self, trigger_build):
+        AllowedTag.objects.create(name='amazing document', enabled=True)
         self.client.login(username='eric', password='test')
         with requests_mock.Mocker() as rm:
             rm.get(self.document_settings_url, text=DOCUMENT_METADATA)
@@ -491,14 +492,22 @@ class DocsItaliaViewsTest(TestCase):
         naked_no_build_project_lang_url = '%sit/' % naked_no_build_project_url
 
         response = self.client.get(naked_project_url)
-        self.assertRedirects(response, project.get_canonical_url(), fetch_redirect_response=False)
+        self.assertRedirects(
+            response, '{}index.html'.format(project.get_canonical_url()), fetch_redirect_response=False,
+        )
         response = self.client.get(naked_project_lang_url)
-        self.assertRedirects(response, project.get_canonical_url(), fetch_redirect_response=False)
+        self.assertRedirects(
+            response, '{}index.html'.format(project.get_canonical_url()), fetch_redirect_response=False,
+        )
 
         response = self.client.get(naked_no_build_project_url)
-        self.assertRedirects(response, no_build_project.get_canonical_url(), fetch_redirect_response=False)
+        self.assertRedirects(
+            response, '{}index.html'.format(no_build_project.get_canonical_url()), fetch_redirect_response=False,
+        )
         response = self.client.get(naked_no_build_project_lang_url)
-        self.assertRedirects(response, no_build_project.get_canonical_url(), fetch_redirect_response=False)
+        self.assertRedirects(
+            response, '{}index.html'.format(no_build_project.get_canonical_url()), fetch_redirect_response=False,
+        )
 
         response = self.client.get(naked_privateproject_url)
         self.assertEqual(response.status_code, 404)
