@@ -24,6 +24,9 @@ WORKDIR /app
 
 FROM docs_italia_it_base AS docs_italia_it_test
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        wait-for-it \
+    && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir -U pip tox
 
 CMD ["/bin/bash"]
