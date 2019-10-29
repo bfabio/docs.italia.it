@@ -32,7 +32,7 @@ BASE_TAGS = [
     'design',
     'difesa',
     'direttive',
-    "diritto d'autore",
+    'diritto d\'autore',
     'economia',
     'editoria',
     'elezioni',
