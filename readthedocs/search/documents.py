@@ -5,7 +5,7 @@ from django_elasticsearch_dsl import DocType, Index, fields
 
 from elasticsearch import Elasticsearch
 
-from readthedocs.docsitalia.models import Publisher, PublisherProject
+from readthedocs.docsitalia.models import Publisher, PublisherProject, ProjectOrder
 from readthedocs.projects.models import HTMLFile, Project
 
 
@@ -50,17 +50,26 @@ class ProjectDocument(RTDDocTypeMixin, DocType):
     publisher_project = fields.KeywordField()
     # publisher is currently used for faceting only, not for queries
     publisher = fields.KeywordField()
+    priority = fields.IntegerField(attr='projectorder.priority')
+    tags = fields.NestedField(
+        properties={
+            'id': fields.KeywordField(),
+            'name': fields.KeywordField(),
+            'slug': fields.KeywordField(),
+        }
+    )
 
     class Meta:
         model = Project
         fields = ('name', 'slug', 'description')
         ignore_signals = True
         # ensure the Project is reindexed when Publisher or PublisherProject is updated
-        related_models = [PublisherProject, Publisher]
+        related_models = [PublisherProject, Publisher, ProjectOrder]
 
     def get_queryset(self):
         """Fetch related instances."""
         return super().get_queryset().prefetch_related(
+            'tags',
             'publisherproject_set__publisher'
         )
 
@@ -96,7 +105,8 @@ class ProjectDocument(RTDDocTypeMixin, DocType):
 
     @classmethod
     def faceted_search(
-            cls, query, user, language=None, publisher=None, publisher_project=None,
+            cls, query, user, language=None,
+            publisher=None, publisher_project=None, tags=None
     ):
         from readthedocs.search.faceted_search import ProjectSearch
         kwargs = {
@@ -111,6 +121,8 @@ class ProjectDocument(RTDDocTypeMixin, DocType):
             filters['publisher'] = publisher
         if publisher_project:
             filters['publisher_project'] = publisher_project
+        if tags:
+            filters['tags'] = tags
 
         kwargs['filters'] = filters
 
@@ -123,11 +135,14 @@ class PageDocument(RTDDocTypeMixin, DocType):
     # Metadata
     project = fields.KeywordField(attr='project.slug')
     version = fields.KeywordField(attr='version.slug')
+    is_default = fields.BooleanField()
     path = fields.KeywordField(attr='processed_json.path')
     full_path = fields.KeywordField(attr='path')
 
     # Searchable content
     title = fields.TextField(attr='processed_json.title', analyzer='italian')
+    name = fields.KeywordField(attr='processed_json.title')
+    date = fields.DateField(attr='modified_date')
     sections = fields.NestedField(
         attr='processed_json.sections',
         properties={
@@ -160,13 +175,22 @@ class PageDocument(RTDDocTypeMixin, DocType):
     # publisher is currently used for faceting only, not for queries
     publisher = fields.KeywordField()
     privacy_level = fields.KeywordField(attr='version.privacy_level')
+    priority = fields.IntegerField(attr='project.projectorder.priority')
+    tags = fields.NestedField(
+        attr='project.tags',
+        properties={
+            'id': fields.KeywordField(),
+            'name': fields.KeywordField(),
+            'slug': fields.KeywordField(),
+        }
+    )
 
     class Meta:
         model = HTMLFile
         fields = ('commit', 'build')
         ignore_signals = True
-        # ensure the Page is reindexed when Publisher or PublisherProject is updated
-        related_models = [PublisherProject, Publisher]
+        # ensure the Page is reindexed when Publisher or PublisherProject or ProjectOrder is updated
+        related_models = [PublisherProject, Publisher, ProjectOrder]
 
     def get_instances_from_related(self, related_instance):
         """
@@ -181,6 +205,8 @@ class PageDocument(RTDDocTypeMixin, DocType):
             return HTMLFile.objects.filter(project__publisherproject__publisher=related_instance)
         elif isinstance(related_instance, PublisherProject):
             return HTMLFile.objects.filter(project__publisherproject=related_instance)
+        elif isinstance(related_instance, ProjectOrder):
+            return HTMLFile.objects.filter(project__projectorder=related_instance)
 
     def prepare_domains(self, html_file):
         """Prepares and returns the values for domains field."""
@@ -225,22 +251,26 @@ class PageDocument(RTDDocTypeMixin, DocType):
         """Prepare docsitalia publisher project field."""
         # not using more sophisticated Django methods in order to exploit prefetching
         try:
-            return instance.project.publisherproject_set.all()[0].slug
-        except IndexError:
+            return instance.project.publisherproject_set.first().slug
+        except AttributeError:
             return
 
     def prepare_publisher(self, instance):
         """Prepare docsitalia publisher field."""
         # not using more sophisticated Django methods in order to exploit prefetching
         try:
-            return instance.project.publisherproject_set.all()[0].publisher.name
-        except IndexError:
+            return instance.project.publisherproject_set.first().publisher.name
+        except AttributeError:
             return
+
+    def prepare_is_default(self, instance):
+        """Prepare is_default field."""
+        return instance.version.slug == instance.project.default_version
 
     @classmethod
     def faceted_search(
             cls, query, user, projects_list=None, versions_list=None,
-            filter_by_user=True, publisher=None, publisher_project=None,
+            filter_by_user=True, publisher=None, publisher_project=None, tags=None,
     ):
         from readthedocs.search.faceted_search import PageSearch
         kwargs = {
@@ -258,6 +288,8 @@ class PageDocument(RTDDocTypeMixin, DocType):
             filters['publisher'] = publisher
         if publisher_project:
             filters['publisher_project'] = publisher_project
+        if tags:
+            filters['tags'] = tags
 
         kwargs['filters'] = filters
 
@@ -272,6 +304,7 @@ class PageDocument(RTDDocTypeMixin, DocType):
         queryset = queryset.internal().filter(
             project__documentation_type__contains='sphinx'
         ).prefetch_related(
+            'project__tags',
             'project__publisherproject_set__publisher'
         )
 

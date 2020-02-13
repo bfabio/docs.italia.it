@@ -3,8 +3,10 @@
 
 import logging
 
+from django.db.models import Case, When
 from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import DetailView, ListView, View
 
@@ -17,8 +19,9 @@ from readthedocs.projects.views.private import ImportView
 
 from ..github import get_metadata_for_document
 from ..metadata import InvalidMetadata
-from ..models import PublisherProject, Publisher, update_project_from_metadata
+from ..models import PublisherProject, Publisher, ProjectOrder, update_project_from_metadata
 from ..utils import get_projects_with_builds
+from ...search.views import elastic_search
 
 log = logging.getLogger(__name__)  # noqa
 
@@ -39,17 +42,30 @@ class DocsItaliaHomePage(ListView):  # pylint: disable=too-many-ancestors
         - PublisherProject is active
         - document (Project) has a public build
         - Build is success and finished
+
+        Ordering by:
+        - ProjectOrder model values
+        - modified_date descending
+        - pub_date descending
         """
         active_pub_projects = PublisherProject.objects.filter(
             active=True,
             publisher__active=True
         )
         qs = get_projects_with_builds()
+
+        order_by_list = ['-modified_date', '-pub_date']
+
+        projects_priority_list = ProjectOrder.objects.all().values_list('project', flat=True)
+        if projects_priority_list:
+            project_priority_order = Case(
+                *[When(id=pk, then=pos) for pos, pk in enumerate(projects_priority_list)]
+            )
+            order_by_list.insert(0, project_priority_order)
+
         return qs.filter(
             publisherproject__in=active_pub_projects
-        ).order_by(
-            '-modified_date', '-pub_date'
-        )[:24]
+        ).order_by(*order_by_list)[:24]
 
 
 class PublisherList(ListView):  # pylint: disable=too-many-ancestors
@@ -192,3 +208,25 @@ class DocsItaliaImport(ProjectImportMixin, ImportView):  # pylint: disable=too-m
         project_import.send(sender=project, request=self.request)
         self.trigger_initial_build(project, request.user)
         return redirect('projects_detail', project_slug=project.slug)
+
+
+def server_error_401(request, template_name='401.html'):
+    """A simple 401 handler so we get media."""
+    response = render(request, template_name)
+    response.status_code = 401
+    return response
+
+
+def search_by_tag(request, tag):
+    """Wrapper around readthedocs.search.views.elastic_search to search by tag."""
+    get_data = request.GET.copy()
+    if get_data.get('tags') or get_data.get('q') or get_data.get('type'):
+        real_search = '%s?%s' % (reverse('search'), request.GET.urlencode())
+        return HttpResponseRedirect(real_search)
+    if not get_data.get('q'):
+        get_data['q'] = '*'
+    if not get_data.get('type'):
+        get_data['type'] = 'file'
+    get_data.appendlist('tags', tag)
+    request.GET = get_data
+    return elastic_search(request)

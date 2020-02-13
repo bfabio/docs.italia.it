@@ -54,8 +54,9 @@ branches:
   - master
   - rel # Community release branch
   - relcorp # Corporate release branch
-  - /^dev/.*$/ # docsitalia dev branch
-  - /^production/.*$/ # docsitalia production branch
+  - /^dev.*$/ # docsitalia dev branch
+  - /^staging.*$/ # docsitalia staging branch
+  - /^production.*$/ # docsitalia production branch
   - /^italia-.*$/ # general docs italia branches
 
 addons:

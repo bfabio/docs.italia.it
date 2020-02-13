@@ -30,10 +30,13 @@ class DocsItaliaDockerSettings(CommunityBaseSettings):
     RTD_LATEST_VERBOSE_NAME = RTD_LATEST
     RTD_STABLE = 'stabile'
     RTD_STABLE_VERBOSE_NAME = RTD_STABLE
+    RTD_LATEST_EN = 'draft'
+    RTD_STABLE_EN = 'stable'
 
     # General settings
     DEBUG = os.environ['DEBUG']
     TEMPLATE_DEBUG = False
+    TAGGIT_TAGS_FROM_STRING = 'readthedocs.docsitalia.utils.docsitalia_parse_tags'
 
     DOCS_BASE = os.environ.get('DOCS_BASE', CommunityBaseSettings.SITE_ROOT)
     MEDIA_ROOT = os.path.join(DOCS_BASE, 'media/')
@@ -261,7 +264,7 @@ class DocsItaliaDockerSettings(CommunityBaseSettings):
             index + 1,
             'restrictedsessions.middleware.RestrictedSessionsMiddleware'
         )
-        if os.environ.get('DEBUG', False):
+        if os.environ.get('DEBUG', False) and os.environ.get('ENABLE_DEBUG_TOOLBAR', True):
             middlewares.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
         return middlewares
 

@@ -140,6 +140,7 @@ class CommunityBaseSettings(Settings):
             'readthedocs.sphinx_domains',
             'readthedocs.search',
 
+
             # allauth
             'allauth',
             'allauth.account',
@@ -453,6 +454,13 @@ class CommunityBaseSettings(Settings):
         },
         'page': {
             'name': 'page_index',
+            'settings': {
+                'number_of_shards': 1,
+                'number_of_replicas': 1,
+            }
+        },
+        'quicksearch': {
+            'name': 'quicksearch_index',
             'settings': {
                 'number_of_shards': 1,
                 'number_of_replicas': 1,

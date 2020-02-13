@@ -312,7 +312,7 @@ class TestPageSearch(object):
             search_params=search_params,
         )
         project_facets = facets['project']
-        resulted_project_facets = [facet[0] for facet in project_facets]
+        resulted_project_facets = [ facet[0] for facet in project_facets ]
 
         # There should be 1 search result as we have filtered
         assert len(results) == 1
@@ -375,3 +375,45 @@ class TestPageSearch(object):
             search_params=search_params,
         )
         assert len(results) == 0
+
+    def test_search_page_size(self, client, all_projects):
+        query = 'are'
+        search_params = {'q': query, 'type': 'file'}
+        results, _ = self._get_search_result(
+            url=self.url,
+            client=client,
+            search_params=search_params,
+        )
+        # There should be 3 search result
+        assert len(results) == 3
+
+        search_params['page_size'] = 2
+
+        results, _ = self._get_search_result(
+            url=self.url,
+            client=client,
+            search_params=search_params,
+        )
+
+        assert len(results) == 2
+
+        search_params['page_size'] = 'not_number'
+
+        results, _ = self._get_search_result(
+            url=self.url,
+            client=client,
+            search_params=search_params,
+        )
+
+        assert len(results) == 3
+
+        search_params['page_size'] = ''
+
+        results, _ = self._get_search_result(
+            url=self.url,
+            client=client,
+            search_params=search_params,
+        )
+
+        assert len(results) == 3
+

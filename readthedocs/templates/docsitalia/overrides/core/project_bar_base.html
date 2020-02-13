@@ -8,12 +8,6 @@
 <div id="project_bar" class="project-bar">
   <div class="wrapper container">
 
-    {% if project.has_good_build %}
-      <div class="project-view-docs">
-        <a href="{{ project.get_docs_url }}">{% trans "View Docs" %}</a>
-      </div>
-    {% endif %}
-
     <div class="project-title">
       <h1>
         <span class="project-breadcrumb quiet">
@@ -24,6 +18,13 @@
         <a href="{{ project.get_absolute_url }}">{{ project }}</a>
       </h1>
     </div>
+
+  <div class="d-flex flex-column-reverse flex-md-row-reverse justify-content-between">
+    {% if project.has_good_build %}
+      <div class="project-view-docs">
+        <a href="{{ project.get_docs_url }}">{% trans "View Docs" %}</a>
+      </div>
+    {% endif %}
 
     <div class="options">
     {% if project.skip %}
@@ -38,13 +39,6 @@
     {% endif %}
       <ul>
         <li class="{{ overview_active }}"><a href="{{ project.get_absolute_url }}">{% trans "Overview" %}</a></li>
-
-        <li class="{{ downloads_active }}"><a href="{% url "project_downloads" project.slug %}" rel="nofollow,noindex">{% trans "Downloads" %}</a></li>
-
-        <li class="{{ builds_active }}"><a href="{{ project.get_builds_url }}">{% trans "Builds" %}</a></li>
-
-        <li class="{{ versions_active }}"><a href="{% url "project_version_list" project.slug %}" rel="nofollow,noindex">{% trans "Versions" %}</a></li>
-
         {% if request.user|is_admin:project %}
           <li class="{{ edit_active }} project-admin">
             <a href="{% url "projects_edit" project.slug %}">
@@ -57,6 +51,7 @@
         {% endif %}
       </ul>
     </div>
+  </div>
 
 
   </div>
