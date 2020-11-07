@@ -127,3 +127,19 @@ $(function() {
     });
   })();
 })
+
+var escapeHtml = function(string) {
+    let entities = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+        '/': '&#x2F;',
+        '`': '&#x60;',
+        '=': '&#x3D;'
+    };
+    return String(string).replace(/[&<>"'`=\/]/g, function toEntity(s) {
+        return entities[s];
+    });
+};

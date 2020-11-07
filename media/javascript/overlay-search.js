@@ -42,12 +42,12 @@ var createSearchMoreItemList = function () {
 
   return (
     '<li class="autocomplete-list-freesearch">' +
-      '<a class="ml-1" href="' + link + '">' +
+      '<a class="ml-1" href="' + encodeURI(escapeHtml(link)) + '">' +
         '<svg class="icon icon-xs icon-primary search-icon">' +
           '<use xlink:href="/media/static/vendor/bootstrap-italia/svg/sprite.svg#it-search"></use>' +
         '</svg>' +
         '<span class="autocomplete-list-text">' +
-          '<span>' + title + '</span>' +
+          '<span>' + escapeHtml(title) + '</span>' +
         '</span>' +
         '<svg class="icon icon-xs icon-primary right-arrow-icon">' +
           '<use xlink:href="/media/static/vendor/bootstrap-italia/svg/sprite.svg#it-arrow-right"></use>' +
